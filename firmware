@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HYPEROS // REALITY KERNEL</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        /* ================= SYSTEM VARIABLES & THEME ================= */
+        :root {
+            /* Palette par défaut (Dark Red) */
+            --bg-core: #050000;
+            --bg-grid: #0f0202;
+            --win-bg: rgba(10, 2, 2, 0.98);
+            --win-header: rgba(40, 5, 5, 0.95);
+            --primary: #ff1414;
+            --primary-dim: #800000;
+            --primary-glow: rgba(255, 20, 20, 0.5);
+            --border: #4a0a0a;
+            --text-main: #e0e0e0;
+            --text-dim: #883333;
+            --success: #00ff41;
+            --warning: #ffcc00;
+            
+            --taskbar-h: 48px;
+            --header-h: 32px;
+        }
+
+        /* Classes de thèmes dynamiques */
+        body.theme-blue { --bg-core: #000510; --bg-grid: #020a1a; --win-bg: rgba(2, 10, 26, 0.98); --win-header: rgba(5, 20, 50, 0.95); --primary: #0088ff; --primary-dim: #003388; --primary-glow: rgba(0, 136, 255, 0.5); --border: #0a2a5a; --text-dim: #3366aa; }
+        body.theme-green { --bg-core: #000f05; --bg-grid: #021a08; --win-bg: rgba(2, 26, 8, 0.98); --win-header: rgba(5, 50, 15, 0.95); --primary: #00ff66; --primary-dim: #008833; --primary-glow: rgba(0, 255, 102, 0.5); --border: #0a5a20; --text-dim: #338844; }
+        body.theme-purple { --bg-core: #0f0010; --bg-grid: #1a021a; --win-bg: rgba(26, 2, 26, 0.98); --win-header: rgba(50, 5, 50, 0.95); --primary: #bd00ff; --primary-dim: #660088; --primary-glow: rgba(189, 0, 255, 0.5); --border: #4a0a5a; --text-dim: #883399; }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        html, body { 
+            width: 100%; height: 100%; overflow: hidden; 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-core); color: var(--text-main); 
+            transition: background-color 0.5s;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: var(--primary-dim); border-radius: 0; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        /* ================= BACKGROUND FX ================= */
+        #bg-fx {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: linear-gradient(var(--bg-grid) 1px, transparent 1px), linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+            background-size: 40px 40px; opacity: 0.15; z-index: 0; pointer-events: none;
+        }
+        #vignette { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, transparent 50%, #000 100%); z-index: 1; pointer-events: none; }
+
+        /* ================= UTILITIES ================= */
+        .hidden { display: !important; } /* Fix CSS */
+        .flex-center { display: flex; align-items: center; justify-content: center; }
+        .text-primary { color: var(--primary); text-shadow: 0 0 5px var(--primary-glow); }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .font-tech { font-family: 'Orbitron', sans-serif; }
+
+        /* ================= BOOT & LOGIN ================= */
+        #boot-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 999999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .loader { width: 300px; height: 4px; background: #220505; margin-top: 20px; position: relative; overflow: hidden; }
+        .loader::after {
+            content: ''; position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: var(--primary); animation: load 2.5s ease-in-out forwards; box-shadow: 0 0 15px var(--primary);
+        }
+        @keyframes load { 0% { width: 0%; } 100% { width: 100%; } }
+
+        #login-screen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: radial-gradient(circle at 50% 50%, #1a0505 0%, #000000 100%);
+            z-index: 50000; display: none; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 1s;
+        }
+        #login-screen.active { opacity: 1; }
+
+        .login-panel {
+            width: 400px; padding: 40px; background: rgba(5, 0, 0, 0.95);
+            border: 1px solid var(--primary-dim); box-shadow: 0 0 60px rgba(0,0,0,0.9); position: relative;
+        }
+        .login-panel::before { content: ''; position: absolute; top: -1px; left: -1px; width: 30px; height: 30px; border-top: 3px solid var(--primary); border-left: 3px solid var(--primary); }
+        .login-panel::after { content: ''; position: absolute; bottom: -1px; right: -1px; width: 30px; height: 30px; border-bottom: 3px solid var(--primary); border-right: 3px solid var(--primary); }
+
+        input, select, button, textarea { font-family: 'JetBrains Mono', monospace; outline: none; }
+        input[type="text"], input[type="password"], input[type="date"], input[type="email"], textarea, select {
+            width: 100%; background: rgba(0,0,0,0.5); border: 1px solid #333; color: #fff; padding: 12px; margin-bottom: 12px; transition: 0.3s; border-radius: 4px;
+        }
+        input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 15px var(--primary-glow); background: rgba(0,0,0,0.8); }
+
+        button {
+            background: linear-gradient(45deg, #300000, #800000); border: 1px solid var(--primary);
+            color: #fff; cursor: pointer; padding: 12px; text-transform: uppercase; letter-spacing: 1px; font-size: 11px;
+            transition: 0.2s; width: 100%; font-weight: bold; border-radius: 2px; position: relative; overflow: hidden;
+        }
+        button:hover { background: var(--primary); color: #000; box-shadow: 0 0 20px var(--primary-glow); transform: translateY(-1px); }
+        button:active { transform: translateY(1px); }
+        
+        .btn-small { width: auto; padding: 5px 10px; font-size: 9px; display: inline-block; }
+
+        /* ================= DESKTOP ================= */
+        #desktop { display: none; height: 100%; width: 100%; position: relative; z-index: 10; }
+
+        #top-bar {
+            height: var(--header-h); background: rgba(0,0,0,0.7); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px; font-size: 11px; z-index: 9000;
+        }
+
+        #desktop-area { height: calc(100% - var(--header-h) - var(--taskbar-h)); position: relative; padding: 15px; }
+
+        .icon-grid { display: flex; flex-direction: column; flex-wrap: wrap; height: 100%; align-content: flex-start; gap: 15px; }
+        .d-icon { width: 85px; height: 95px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 6px; cursor: pointer; transition: 0.2s; color: #aaa; }
+        .d-icon:hover { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--primary-dim); color: #fff; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+        .d-icon-img { font-size: 28px; margin-bottom: 8px; filter: drop-shadow(0 0 8px rgba(0,0,0,0.5)); }
+        .d-icon-label { font-size: 10px; text-align: center; text-shadow: 0 2px 4px #000; font-weight: 500; }
+
+        #taskbar {
+            position: absolute; bottom: 0; width: 100%; height: var(--taskbar-h);
+            background: rgba(5, 2, 2, 0.95); border-top: 1px solid var(--border);
+            display: flex; align-items: center; padding: 0 15px; gap: 8px; z-index: 9000; backdrop-filter: blur(15px);
+        }
+        .tb-start {
+            width: 40px; height: 40px; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-family: 'Orbitron'; font-size: 20px; cursor: pointer; margin-right: 15px; box-shadow: 0 0 15px var(--primary-glow); border-radius: 4px;
+        }
+        .tb-item { width: 45px; height: 38px; background: rgba(255,255,255,0.03); border: 1px solid transparent; color: var(--text-dim); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; border-radius: 4px; }
+        .tb-item:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+        .tb-item.active { background: rgba(255, 255, 255, 0.1); border-bottom: 3px solid var(--primary); color: var(--primary); }
+
+        /* ================= WINDOW MANAGER ================= */
+        .window {
+            position: absolute; background: var(--win-bg); border: 1px solid var(--border);
+            display: flex; flex-direction: column; box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+            border-radius: 6px; overflow: hidden; min-width: 300px; min-height: 200px;
+            animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .win-header { height: 32px; background: var(--win-header); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 10px; cursor: grab; user-select: none; }
+        .win-title { font-size: 11px; font-weight: bold; color: var(--primary); letter-spacing: 1px; text-transform: uppercase; }
+        .win-controls { display: flex; gap: 8px; }
+        .win-btn { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; border: none; }
+        .win-close { background: #ff4444; } .win-min { background: #ffbb33; } .win-max { background: #00C851; }
+        .win-body { flex: 1; overflow: hidden; position: relative; background: rgba(0,0,0,0.4); }
+        .resize-handle { position: absolute; bottom: 0; right: 0; width: 15px; height: 15px; cursor: se-resize; z-index: 10; background: linear-gradient(135deg, transparent 50%, var(--primary-dim) 50%); }
+        .window.minimized { display: none; }
+        .window.maximized { top: 0 !important; left: 0 !important; width: 100% !important; height: calc(100% - 48px) !important; border-radius: 0; }
+
+        /* ================= APPS ================= */
+        .app-terminal { height: 100%; display: flex; flex-direction: column; background: #050505; color: #ddd; font-family: 'JetBrains Mono', font-size: 13px; }
+        .term-output { flex: 1; padding: 15px; overflow-y: auto; white-space: pre-wrap; line-height: 1.5; }
+        .term-input-row { display: flex; padding: 8px; background: #000; border-top: 1px solid #333; }
+        .term-prompt { color: var(--primary); margin-right: 10px; font-weight: bold; }
+        .term-field { flex: 1; background: transparent; border: none; color: #fff; font-family: inherit; font-size: inherit; }
+
+        /* File Explorer */
+        .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; padding: 15px; }
+        .file-item { text-align: center; cursor: pointer; padding: 10px; border-radius: 4px; transition: 0.2s; }
+        .file-item:hover { background: rgba(255,255,255,0.05); }
+        .file-icon { font-size: 32px; display: block; margin-bottom: 5px; }
+
+        /* Flipper */
+        .flipper-body { background: #111; padding: 20px; color: #ddd; height: 100%; font-family: 'JetBrains Mono'; display: flex; flex-direction: column; }
+        .flipper-screen { background: #b8c998; color: #000; padding: 20px; height: 180px; border-radius: 4px; margin-bottom: 15px; font-family: 'monospace'; box-shadow: inset 0 0 20px rgba(0,0,0,0.3); overflow-y: auto; }
+        .f-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .f-btn { padding: 15px; background: #2a2a2a; border: 1px solid #444; color: #fff; cursor: pointer; text-align: center; transition: 0.2s; }
+        .f-btn:hover { background: var(--primary); border-color: #fff; color: #000; }
+        .f-btn.active { background: var(--primary); color: #000; box-shadow: 0 0 10px var(--primary); font-weight: bold; }
+
+        /* Market */
+        .market-layout { display: flex; height: 100%; }
+        .market-sidebar { width: 160px; background: rgba(0,0,0,0.3); border-right: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; gap: 2px; }
+        .m-nav { padding: 10px; cursor: pointer; font-size: 11px; color: #888; border-left: 3px solid transparent; transition: 0.2s; }
+        .m-nav:hover, .m-nav.active { background: rgba(255,255,255,0.05); color: var(--primary); border-left-color: var(--primary); }
+        .market-main { flex: 1; padding: 20px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+        .shop-card { background: rgba(255,255,255,0.03); border: 1px solid #333; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; height: 160px; transition: 0.2s; }
+        .shop-card:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .sc-title { font-weight: bold; font-size: 13px; color: #fff; margin-bottom: 5px; }
+        .sc-desc { font-size: 10px; color: #888; margin-bottom: 10px; line-height: 1.4; }
+        .sc-price { color: var(--primary); font-family: 'Orbitron'; font-size: 16px; font-weight: bold; margin-bottom: 10px; }
+
+        /* Toast */
+        #toast-container { position: fixed; bottom: 60px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+        .toast { background: rgba(10, 10, 10, 0.95); border-left: 4px solid var(--primary); color: #fff; padding: 12px 20px; font-size: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.8); animation: slideIn 0.3s forwards; opacity: 0; transform: translateX(50px); backdrop-filter: blur(5px); }
+        @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+
+        /* Registration Steps */
+        .reg-step { display: none; }
+        .reg-step.active { display: block; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body class="theme-red">
+
+    <div id="bg-fx"></div>
+    <div id="vignette"></div>
+
+    <!-- BOOT SCREEN -->
+    <div id="boot-screen">
+        <h1 class="font-tech text-primary" style="letter-spacing: 6px; font-size: 3rem;">HYPER<span style="color:#fff">OS</span></h1>
+        <div class="font-mono" style="margin-top: 15px; color: #555; font-size: 11px;">INITIALISATION DU NOYAU v4.0...</div>
+        <div class="loader"></div>
+    </div>
+
+    <!-- LOGIN / REGISTER SCREEN -->
+    <div id="login-screen">
+        <div class="login-panel">
+            <!-- LOGIN FORM -->
+            <div id="form-login">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h2 class="font-tech text-primary" style="font-size: 28px;">IDENTIFICATION</h2>
+                    <div style="font-size: 9px; color: #555; letter-spacing: 3px; margin-top: 5px;">ACCES RESEAU SECURISE</div>
+                </div>
+                <input type="text" id="l-user" placeholder="NOM D'UTILISATEUR" autocomplete="off">
+                <input type="password" id="l-pass" placeholder="MOT DE PASSE">
+                <button onclick="Sys.login()">CONNEXION</button>
+                <button onclick="UI.showReg()" style="background:transparent; border:1px solid #333; margin-top:10px;">CREER UN COMPTE</button>
+            </div>
+
+            <!-- REGISTER FORM -->
+            <div id="form-register" class="reg-step">
+                <h2 class="font-tech text-primary" style="font-size: 24px; text-align:center; margin-bottom:20px;">CREATION DE COMPTE</h2>
+                
+                <!-- Step 1: Info -->
+                <div id="reg-1" class="reg-step active">
+                    <label style="font-size:10px; color:#888;">INFORMATIONS PERSONNELLES</label>
+                    <input type="text" id="r-name" placeholder="Nom complet / Pseudonyme">
+                    <input type="date" id="r-dob">
+                    <button onclick="Reg.next(2)">SUIVANT</button>
+                    <button onclick="UI.showLogin()" style="background:transparent; margin-top:5px;">ANNULER</button>
+                </div>
+
+                <!-- Step 2: Role -->
+                <div id="reg-2" class="reg-step">
+                    <label style="font-size:10px; color:#888;">QUEL EST VOTRE OBJECTIF ?</label>
+                    <select id="r-role" style="height:45px; font-size:14px;">
+                        <option value="hacker">JOUER / HACKER (Pratique)</option>
+                        <option value="worker">TRAVAILLER / ETUDIER</option>
+                        <option value="dev">DEVELOPPEUR</option>
+                    </select>
+                    <button onclick="Reg.next(3)">SUIVANT</button>
+                </div>
+
+                <!-- Step 3: Creds -->
+                <div id="reg-3" class="reg-step">
+                    <label style="font-size:10px; color:#888;">IDENTIFIANTS SYSTEME</label>
+                    <div id="gen-email" style="color:var(--primary); font-size:12px; margin-bottom:10px; font-family:'JetBrains Mono';">Email: @hyper.os</div>
+                    <input type="text" id="r-user" placeholder="Choisir un ID">
+                    <input type="password" id="r-pass" placeholder="Mot de passe">
+                    <button onclick="Reg.finish()">CREER MON COMPTE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DESKTOP -->
+    <div id="desktop">
+        <div id="top-bar">
+            <div style="display:flex; align-items:center; gap: 20px;">
+                <span class="font-tech text-primary" style="font-weight:900; font-size:14px;">HYPEROS</span>
+                <div style="display:flex; align-items:center;">
+                    <div style="width: 8px; height: 8px; background: var(--success); border-radius: 50%; margin-right: 8px; box-shadow: 0 0 8px var(--success);"></div>
+                    <span style="color:#666; font-size: 10px; letter-spacing:1px;">RESEAU GLOBAL ACTIF</span>
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap: 20px; font-family:'JetBrains Mono'; font-size: 11px;">
+                <span id="clock">00:00</span>
+                <span style="color: var(--primary);" id="user-display">GUEST</span>
+                <span style="color: #666; cursor: pointer; margin-left:10px;" onclick="Sys.logout()">[EXIT]</span>
+            </div>
+        </div>
+
+        <div id="desktop-area">
+            <div class="icon-grid" id="icon-container"></div>
+        </div>
+
+        <div id="taskbar">
+            <div class="tb-start" onclick="Sys.startMenu()">H</div>
+            <div id="tb-open-apps" style="display:flex; gap:5px; flex:1;"></div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+<script>
+/**
+ * HYPEROS V4 - REALITY KERNEL
+ * Système complet : Auth, Banque, Hack, Réseau, Fichiers
+ */
+
+const DB = {
+    key: 'hyperos_v4_reality',
+    data: {
+        users: [],
+        currentUser: null,
+        chat: [],
+        globalBoard: [], // Messages publics, devoirs
+        files: [], // Fichiers système
+        hacks: [] // Logs de hack
+    },
+    init() {
+        const stored = localStorage.getItem(this.key);
+        if (stored) {
+            this.data = JSON.parse(stored);
+        } else {
+            // Création Admin par défaut
+            this.data.users.push({ 
+                id: 'admin', name: 'admin', pass: 'admin', email: 'admin@hyper.os', 
+                role: 'admin', money: 9999999, ip: '10.0.0.1', dob: '1970-01-01', 
+                inventory: [], files: [], infected: false 
+            });
+            // Fichiers système par défaut
+            this.data.files.push({ name: 'readme.txt', content: 'Bienvenue sur HyperOS. Ce système est une simulation réaliste.' });
+            this.save();
+        }
+    },
+    save() { 
+        localStorage.setItem(this.key, JSON.stringify(this.data)); 
+        // Simuler une sauvegarde "Cloud" synchrone entre onglets (via event listener dans une vraie app)
+    },
+    log(msg) { 
+        this.data.hacks.unshift({ t: new Date().toLocaleTimeString(), m: msg }); 
+        if(this.data.hacks.length>100) this.data.hacks.pop(); 
+        this.save(); 
+    },
+    refresh() {
+        // Recharger depuis localStorage pour voir les updates d'autres users
+        const s = localStorage.getItem(this.key);
+        if(s) this.data = JSON.parse(s);
+    }
+};
+
+const Sys = {
+    init() {
+        DB.init();
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('fr-FR');
+            DB.refresh(); // Synchro réseau
+        }, 1000);
+
+        // Boot
+        setTimeout(() => {
+            document.getElementById('boot-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('boot-screen').style.display = 'none';
+                document.getElementById('login-screen').style.display = 'flex';
+                setTimeout(() => document.getElementById('login-screen').classList.add('active'), 50);
+            }, 1000);
+        }, 2500);
+
+        this.renderDesktop();
+    },
+
+    login() {
+        const u = document.getElementById('l-user').value.trim();
+        const p = document.getElementById('l-pass').value.trim();
+        
+        // Vérification dans la base de données
+        const user = DB.data.users.find(x => x.name === u && x.pass === p);
+        
+        if (user) {
+            if(user.infected) {
+                this.toast("ALERT: Votre système a des traces d'infection.", "error");
+            }
+            DB.data.currentUser = user;
+            this.enterDesktop();
+        } else {
+            this.toast('Identifiants incorrects', 'error');
+            document.querySelector('.login-panel').animate([
+                { transform: 'translateX(0)' }, { transform: 'translateX(-10px)' }, { transform: 'translateX(10px)' }, { transform: 'translateX(0)' }
+            ], { duration: 300 });
+        }
+    },
+
+    logout() {
+        DB.data.currentUser = null;
+        document.getElementById('desktop').style.display = 'none';
+        document.getElementById('login-screen').classList.remove('active');
+        setTimeout(() => document.getElementById('login-screen').style.display = 'flex', 500);
+        UI.showLogin();
+    },
+
+    enterDesktop() {
+        document.getElementById('login-screen').classList.remove('active');
+        setTimeout(() => {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('desktop').style.display = 'block';
+            document.getElementById('user-display').innerText = DB.data.currentUser.name.toUpperCase();
+            this.toast(`Bienvenue, ${DB.data.currentUser.name}`);
+            DB.log(`Login: ${DB.data.currentUser.name} (${DB.data.currentUser.ip})`);
+        }, 500);
+    },
+
+    startMenu() {
+        this.toast("Menu Démarrer en cours de développement...");
+    },
+
+    toast(msg, type='info') {
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        t.className = 'toast';
+        t.style.borderLeftColor = type==='error'?'red':(type==='success'?'#00ff41':'var(--primary)');
+        t.innerText = `> ${msg}`;
+        c.appendChild(t);
+        setTimeout(() => t.remove(), 4000);
+    },
+
+    renderDesktop() {
+        const apps = [
+            { id: 'terminal', name: 'Terminal', icon: '>_' },
+            { id: 'google', name: 'Google', icon: 'G' },
+            { id: 'chat', name: 'Messagerie', icon: '✉' },
+            { id: 'board', name: 'Forum Public', icon: '📢' },
+            { id: 'bank', name: 'Banque', icon: '€' },
+            { id: 'market', name: 'Black Market', icon: '$' },
+            { id: 'files', name: 'Fichiers', icon: '📁' },
+            { id: 'settings', name: 'Réglages', icon: '⚙' },
+            { id: 'admin', name: 'Admin', icon: '🛡' }
+        ];
+
+        const c = document.getElementById('icon-container');
+        c.innerHTML = '';
+        apps.forEach(app => {
+            const el = document.createElement('div');
+            el.className = 'd-icon';
+            el.innerHTML = `<div class="d-icon-img">${app.icon}</div><div class="d-icon-label">${app.name}</div>`;
+            el.ondblclick = () => WindowManager.open(app.id, app.name.toUpperCase(), APPS[app.id].render);
+            c.appendChild(el);
+        });
+    }
+};
+
+const UI = {
+    showLogin() {
+        document.getElementById('form-login').style.display = 'block';
+        document.getElementById('form-register').style.display = 'none';
+    },
+    showReg() {
+        document.getElementById('form-login').style.display = 'none';
+        document.getElementById('form-register').style.display = 'block';
+        document.getElementById('reg-1').classList.add('active');
+        // Generate fake email part
+        const rand = Math.random().toString(36).substring(7);
+        document.getElementById('gen-email').innerText = `Email: user_${rand}@hyper.os`;
+    },
+    setTheme(themeClass) {
+        document.body.className = themeClass;
+    }
+};
+
+const Reg = {
+    step: 1,
+    data: {},
+    next(n) {
+        document.getElementById(`reg-${this.step}`).classList.remove('active');
+        this.step = n;
+        document.getElementById(`reg-${this.step}`).classList.add('active');
+        
+        if(n===2) {
+            this.data.name = document.getElementById('r-name').value;
+            this.data.dob = document.getElementById('r-dob').value;
+            if(!this.data.name) return Sys.toast("Nom requis", "error");
+        }
+        if(n===3) {
+            this.data.role = document.getElementById('r-role').value;
+        }
+    },
+    finish() {
+        const u = document.getElementById('r-user').value.trim();
+        const p = document.getElementById('r-pass').value.trim();
+        if(!u || !p) return Sys.toast("Champs vides", "error");
+        if(DB.data.users.find(x => x.name === u)) return Sys.toast("Utilisateur existe déjà", "error");
+
+        const newUser = {
+            id: 'u_' + Date.now(),
+            name: u,
+            pass: p,
+            email: document.getElementById('gen-email').innerText.replace('Email: ', ''),
+            role: this.data.role,
+            dob: this.data.dob,
+            money: 500,
+            ip: `192.168.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`,
+            inventory: [],
+            files: [{name: 'bienvenue.txt', content: 'Bienvenue ' + u + '.'}],
+            infected: false
+        };
+        DB.data.users.push(newUser);
+        DB.save();
+        Sys.toast("Compte créé avec succès !");
+        UI.showLogin();
+    }
+};
+
+const WindowManager = {
+    zIndex: 100,
+    open(appId, title, renderFn, w=700, h=500) {
+        const id = 'win_' + Date.now();
+        this.zIndex++;
+        const win = document.createElement('div');
+        win.className = 'window';
+        win.id = id;
+        win.style.width = w+'px'; win.style.height = h+'px';
+        win.style.top = (50+(this.zIndex%20)*15)+'px'; win.style.left = (50+(this.zIndex%20)*15)+'px';
+        win.style.zIndex = this.zIndex;
+        
+        win.innerHTML = `
+            <div class="win-header" onmousedown="WindowManager.focus('${id}')">
+                <span class="win-title">${title}</span>
+                <div class="win-controls">
+                    <button class="win-btn win-min" onclick="WindowManager.minimize('${id}')"></button>
+                    <button class="win-btn win-max" onclick="WindowManager.maximize('${id}')"></button>
+                    <button class="win-btn win-close" onclick="WindowManager.close('${id}')"></button>
+                </div>
+            </div>
+            <div class="win-body" id="body-${id}"></div>
+            <div class="resize-handle" onmousedown="WindowManager.initResize(event, '${id}')"></div>
+        `;
+        document.getElementById('desktop-area').appendChild(win);
+        document.getElementById(`body-${id}`).appendChild(renderFn(id));
+        this.addTaskbar(id, appId, title);
+        this.makeDraggable(win);
+    },
+    close(id) { document.getElementById(id)?.remove(); document.getElementById('tb-'+id)?.remove(); },
+    minimize(id) { document.getElementById(id).classList.add('minimized'); document.getElementById('tb-'+id).classList.remove('active'); },
+    maximize(id) { document.getElementById(id).classList.toggle('maximized'); },
+    focus(id) {
+        this.zIndex++;
+        const w = document.getElementById(id);
+        if(w) w.style.zIndex = this.zIndex;
+        document.querySelectorAll('.tb-item').forEach(e => e.classList.remove('active'));
+        const tb = document.getElementById('tb-'+id);
+        if(tb) tb.classList.add('active');
+    },
+    addTaskbar(id, app, title) {
+        const tb = document.getElementById('tb-open-apps');
+        const el = document.createElement('div');
+        el.className = 'tb-item active'; el.id = 'tb-'+id;
+        el.innerText = APPS[app].icon || app[0];
+        el.title = title;
+        el.onclick = () => {
+            const w = document.getElementById(id);
+            if(w.classList.contains('minimized')) { w.classList.remove('minimized'); this.focus(id); }
+            else if(w.style.zIndex != this.zIndex) this.focus(id);
+            else this.minimize(id);
+        };
+        tb.appendChild(el);
+    },
+    makeDraggable(el) {
+        const h = el.querySelector('.win-header');
+        let isD=false, sx, sy, ix, iy;
+        h.onmousedown = (e) => { if(e.target.tagName==='BUTTON')return; isD=true; sx=e.clientX; sy=e.clientY; ix=el.offsetLeft; iy=el.offsetTop; this.focus(el.id); };
+        window.onmousemove = (e) => { if(!isD)return; el.style.left=(ix+e.clientX-sx)+'px'; el.style.top=(iy+e.clientY-sy)+'px'; };
+        window.onmouseup = () => isD=false;
+    },
+    initResize(e, id) {
+        e.preventDefault();
+        const w = document.getElementById(id);
+        const sx=e.clientX, sy=e.clientY, sw=parseInt(w.style.width), sh=parseInt(w.style.height);
+        const move = (ev) => { w.style.width=(sw+ev.clientX-sx)+'px'; w.style.height=(sh+ev.clientY-sy)+'px'; };
+        const stop = () => { document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',stop); };
+        document.addEventListener('mousemove',move); document.addEventListener('mouseup',stop);
+    }
+};
+
+/* ================= HACKING ENGINE ================= */
+const HackEngine = {
+    // Vérifie l'IP et lance l'attaque "Réelle" dans le système
+    attack(targetIp, type, virusName) {
+        DB.refresh(); // S'assurer qu'on a les dernières données
+        const target = DB.data.users.find(u => u.ip === targetIp);
+        
+        if(!target) return { success: false, msg: "IP hors ligne ou introuvable." };
+        if(target.id === DB.data.currentUser.id) return { success: false, msg: "Impossible de se hacker soi-même." };
+
+        // Simulation du canal de transmission
+        Sys.toast(`Connexion établie avec ${targetIp}...`, "info");
+        
+        setTimeout(() => {
+            let resultMsg = "";
+            let success = true;
+
+            if(type === 'money') {
+                const stealAmount = Math.floor(target.money * 0.2); // Vole 20%
+                target.money -= stealAmount;
+                DB.data.currentUser.money += stealAmount;
+                resultMsg = `Transfert forcé: ${stealAmount} CR volé à ${target.name}.`;
+                Sys.toast(`+${stealAmount} CR reçus !`, "success");
+            }
+            else if(type === 'spy') {
+                resultMsg = `Keylogger activé sur ${target.name}. Mots de passe interceptés.`;
+                // On pourrait stocker les logs de la cible ici
+            }
+            else if(type === 'virus') {
+                target.infected = true;
+                resultMsg = `${virusName} injecté avec succès. Le système de ${target.name} est corrompu.`;
+            }
+            else if(type === 'disconnect') {
+                // Dans une vraie app web, on ne peut pas déconnecter l'autre de force sans WebSocket
+                resultMsg = `Paquet DDOS envoyé à ${target.ip}. Latence augmentée.`;
+            }
+
+            DB.log(`HACK: ${DB.data.currentUser.name} a hacké ${target.name} (${type})`);
+            DB.save();
+            return { success: true, msg: resultMsg };
+
+        }, 2000); // Délai du "hack"
+
+        return { success: true, msg: "Injection en cours..." };
+    }
+};
+
+/* ================= APPLICATIONS ================= */
+const APPS = {
+    terminal: {
+        icon: '>_',
+        render: (winId) => {
+            const d = document.createElement('div');
+            d.className = 'app-terminal';
+            d.innerHTML = `
+                <div class="term-output" id="out-${winId}">HyperOS Kernel v4.0 [Reality Mode]<br>Accès réseau autorisé.<br>Tapez 'help' pour les commandes.<br><br></div>
+                <div class="term-input-row">
+                    <span class="term-prompt">root@hyper:~#</span>
+                    <input class="term-field" id="in-${winId}" autocomplete="off">
+                </div>
+            `;
+            setTimeout(() => {
+                const inp = d.querySelector(`#in-${winId}`);
+                const out = d.querySelector(`#out-${winId}`);
+                inp.focus();
+                inp.onkeydown = (e) => {
+                    if(e.key === 'Enter') {
+                        const v = inp.value.trim();
+                        out.innerHTML += `<div><span class="term-prompt">root@hyper:~$</span> ${v}</div>`;
+                        inp.value = '';
+                        const args = v.split(' ');
+                        
+                        // --- SECRET CODES ---
+                        if(v === '694') { WindowManager.open('virus_lab', 'LABORATOIRE VIRAL', APPS.virus_lab.render); }
+                        else if(v === '666') { WindowManager.open('flipper', 'FLIPPER ZERO', APPS.flipper.render); }
+                        else if(v === '693') { WindowManager.open('godmode', 'GOD MODE', APPS.godmode.render); }
+                        // --- BASIC COMMANDS ---
+                        else if(args[0] === 'help') { out.innerHTML += `Commands: help, clear, whoami, date, hack [ip], 694, 666, 693<br>`; }
+                        else if(args[0] === 'clear') { out.innerHTML = ''; }
+                        else if(args[0] === 'whoami') { out.innerHTML += `${DB.data.currentUser.name} (${DB.data.currentUser.ip})<br>`; }
+                        else if(args[0] === 'date') { out.innerHTML += `${new Date().toString()}<br>`; }
+                        else if(args[0] === 'hack') { 
+                            if(args[1]) {
+                                out.innerHTML += `<span style="color:yellow">Tentative d'intrusion sur ${args[1]}...</span><br>`;
+                                const res = HackEngine.attack(args[1], 'spy', 'Manual');
+                                setTimeout(()=> out.innerHTML += `<span style="${res.success ? 'color:#0f0' : 'color:red'}">${res.msg}</span><br>`, 2000);
+                            } else {
+                                out.innerHTML += `Usage: hack [ip_address]<br>`;
+                            }
+                        }
+                        else if(v !== '') { out.innerHTML += `<span style="color:red">Commande inconnue.</span><br>`; }
+                        
+                        out.scrollTop = out.scrollHeight;
+                    }
+                };
+                d.onclick = () => inp.focus();
+            }, 0);
+            return d;
+        }
+    },
+
+    flipper: {
+        icon: 'F',
+        render: (id) => {
+            const d = document.createElement('div');
+            d.className = 'flipper-body';
+            d.innerHTML = `
+                <div class="flipper-screen" id="f-screen-${id}">> Flipper Zero Ready<br>> Waiting for target...</div>
+                <div style="margin-bottom:15px;">
+                    <input type="text" id="f-target-${id}" placeholder="TARGET IP" style="border-color:var(--primary);">
+                </div>
+                <div class="f-grid">
+                    <div class="f-btn" onclick="APPS.flipper.action('${id}', 'badusb', 'BadUSB Payload')">BAD USB</div>
+                    <div class="f-btn" onclick="APPS.flipper.action('${id}', 'subghz', 'Sub-GHz Jammer')">JAMMER</div>
+                    <div class="f-btn" onclick="APPS.flipper.action('${id}', 'nfc', 'NFC Clone')">CLONER NFC</div>
+                    <div class="f-btn" onclick="APPS.flipper.action('${id}', 'inject', 'Custom Virus')">INJECT VIRUS</div>
+                </div>
+                <div style="margin-top:15px; border-top:1px solid #333; padding-top:10px; font-size:10px; color:#888;">
+                    Mode: Injection Physique Simulée
+                </div>
+            `;
+            return d;
+        },
+        action: (winId, type, name) => {
+            const screen = document.getElementById(`f-screen-${winId}`);
+            const targetIp = document.getElementById(`f-target-${winId}`).value;
+            
+            if(!targetIp) { screen.innerHTML += `> ERROR: No Target IP<br>`; return; }
+
+            screen.innerHTML += `> Executing ${name}...<br>`;
+            
+            const res = HackEngine.attack(targetIp, type === 'inject' ? 'virus' : 'spy', name);
+            
+            setTimeout(() => {
+                screen.innerHTML += `> ${res.msg}<br>`;
+                screen.scrollTop = screen.scrollHeight;
+                if(res.success && type === 'inject') {
+                    Sys.toast("Virus Injecté avec succès via Flipper", "success");
+                }
+            }, 1500);
+        }
+    },
+
+    virus_lab: {
+        icon: 'V',
+        render: (id) => {
+            const d = document.createElement('div');
+            d.innerHTML = `
+                <div style="padding:15px; border-bottom:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:bold; color:var(--primary);">VIRUS CREATOR</span>
+                    <button class="btn-small" onclick="Sys.toast('Virus Compilé et prêt !')">COMPILER</button>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; height:100%;">
+                    <div style="padding:15px; border-right:1px solid #333; overflow-y:auto;">
+                        <h4 style="margin-bottom:10px; color:#888;">TEMPLATE</h4>
+                        <div class="shop-card" style="height:auto; margin-bottom:10px; cursor:pointer;" onclick="Sys.toast('Code Spyware chargé')">
+                            <div class="sc-title">SPYWARE V9</div>
+                            <div class="sc-desc">Vol de données silencieux.</div>
+                        </div>
+                        <div class="shop-card" style="height:auto; margin-bottom:10px; cursor:pointer;" onclick="Sys.toast('Code Ransomware chargé')">
+                            <div class="sc-title">LOCKBIT SIM</div>
+                            <div class="sc-desc">Chiffrement de fichiers.</div>
+                        </div>
+                    </div>
+                    <div style="padding:15px;">
+                        <h4 style="margin-bottom:10px; color:#888;">EDITEUR</h4>
+                        <textarea style="width:100%; height:200px; background:#000; color:#0f0; font-size:10px;" spellcheck="false">#!/bin/bash
+# Target: [USER_IP]
+# Payload: Steal Cookies
+
+import socket
+s = socket.socket()</textarea>
+                    </div>
+                </div>
+            `;
+            return d;
+        }
+    },
+
+    godmode: {
+        icon: 'G',
+        render: (id) => {
+            const d = document.createElement('div');
+            d.style.padding = '20px'; d.style.color = 'var(--primary)';
+            d.innerHTML = `
+                <h2>CONTÔLE SYSTÈME</h2>
+                <p style="margin-bottom:20px; font-size:12px; color:#fff;">Accès administrateur via Backdoor.</p>
+                <div style="display:grid; gap:10px;">
+                    <button onclick="DB.data.currentUser.limit = false; Sys.toast('Limites désactivées')">SUPPRIMER LIMITE DE TEMPS</button>
+                    <button onclick="DB.data.currentUser.money += 5000; DB.save(); Sys.toast('+5000 CR générés')">GÉNÉRER CRÉDITS</button>
+                    <button onclick="Sys.toast('Tentative d\'élévation de privilèges...')">ÉLÉVATION DE PRIVILÈGES</button>
+                </div>
+            `;
+            return d;
+        }
+    },
+
+    google: {
+        icon: 'G',
+        render: (id) => {
+            const d = document.createElement('div');
+            d.style.height = '100%'; d.style.display = 'flex'; d.style.flexDirection = 'column';
+            d.innerHTML = `
+                <div style="padding:10px; background:#fff; display:flex; gap:10px;">
+                    <input type="text" placeholder="Recherche Google..." style="background:#f1f1f1; border:none; color:#000; padding:8px 15px; border-radius:20px; flex:1; font-family:'Roboto', sans-serif;">
+                    <button style="background:#4285f4; color:white; width:auto; border-radius:4px; padding:0 20px;">Rechercher</button>
+                </div>
+                <iframe src="https://www.google.com/webhp?igu=1" style="flex:1; border:none; background:white;"></iframe>
+            `;
+            return d;
+        }
+    },
+
+    chat: {
+        icon: '✉',
+        render: (id) => {
+            const d = document.createElement('div');
+            d.className = 'chat-container'; d.style.display='flex'; d.style.flexDirection='column'; d.style.height='100%';
+            d.innerHTML = `
+                <div style="flex:1; padding:15px; overflow-y:auto; font-size:12px; border-bottom:1px solid #333;" id="chat-view-${id}"></div>
+                <div style="padding:10px; display:flex; gap:10px;">
+                    <input type="text" id="chat-in-${id}" placeholder="Envoyer un message..." style="margin:0;">
+                    <button style="width:auto;" onclick="APPS.chat.send('${id}')">></button>
+                </div>
+            `;
+            setTimeout(() => APPS.chat.refresh(id), 0);
+            return d;
+        },
+        send: (id) => {
+            const inp = document.getElementById(`chat-in-${id}`);
+            if(!inp.value.trim()) return;
+            DB.data.chat.push({ u: DB.data.currentUser.name, t: inp.value, time: Date.now() });
+            DB.save();
+            inp.value = '';
+            APPS.chat.refresh(id);
+        },
+        refresh: (id) => {
+            const v = document.getElementById(`chat-view-${id}`);
+            if(!v) return;
+            v.innerHTML = DB.data.chat.map(m => 
+                `<div style="margin-bottom:8px;"><span style="color:var(--primary); font-weight:bold;">[${m.u}]</span> <span style="color:#ccc;">${m.t}</span></div>`
+            ).join('');
+            v.scrollTop = v.scrollHeight;
+        }
+    },
+
+    board: {
+        icon: '📢',
+        render: (id) => {
+            const d = document.createElement('div');
+            d.style.padding = '20px'; d.style.height='100%'; d.style.display='flex'; d.style.flexDirection='column';
+            d.innerHTML = `
+                <h3>FORUM PUBLIC & DEVOIRS</h3>
+                <div style="flex:1; overflow-y:auto; border:1px solid #333; background:rgba(0,0,0,0.3); margin:10px 0; padding:10px;" id="board-list-${id}"></div>
+                <textarea id="board-in-${id}" placeholder="Écrire un message public ou un devoir..." style="height:60px; margin-bottom:5px;"></textarea>
+                <button onclick="APPS.board.post('${id}')" style="width:auto;">PUBLIER</button>
+            `;
+            setTimeout(() => APPS.board.refresh(id), 0);
+            return d;
+        },
+        post: (id) => {
+            const inp = document.getElementById(`board-in-${id}`);
+            if(!inp.value.trim()) return;
+            DB.data.globalBoard.push({ u: DB.data.currentUser.name, t: inp.value, date: new Date().toLocaleDateString() });
+            DB.save();
+            inp.value = '';
+            APPS.board.refresh(id);
+        },
+        refresh: (id) => {
+            const v = document.getElementById(`board-list-${id}`);
+            if(!v) return;
+            v.innerHTML = DB.data.globalBoard.map(m => 
+                `<div style="border-bottom:1px solid #222; padding:10px;">
+                    <div style="font-size:10px; color:#666;">${m.date} - <b>${m.u}</b></div>
+                    <div style="color:#ddd; margin-top:5px;">${m.t}</div>
+                </div>`
+            ).join('');
+        }
+    },
+
+    bank: {
+        icon: '€',
+        render: (id) => {
+            const d = document.createElement('div');
+            d.style.padding = '30px'; d.style.textAlign = 'center';
+            // Recalculer l'argent au cas où il a changé
+            const currentMoney = DB.data.currentUser.money;
+            d.innerHTML = `
+                <h2 style="color:#888; font-size:12px; letter-spacing:2px;">SOLDE DISPONIBLE</h2>
+                <h1 id="bank-bal-${id}" style="font-size:48px; color:var(--primary); font-family:'Orbitron'; margin:10px 0;">${currentMoney} CR</h1>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-top:30px; max-width:400px; margin-left:auto; margin-right:auto;">
+                    <button onclick="Sys.toast('Demande de prêt envoyée')">PRÊT</button>
+                    <button onclick="Sys.toast('Transfert vers compte externe simulé')">TRANSFERT</button>
+                    <button onclick="Sys.toast('Historique téléchargé')">HISTORIQUE</button>
+                    <button style="background:#333;" onclick="Sys.toast('Carte bancaire virtuelle générée')">CARTE</button>
+                </div>
+            `;
+            return d;
+        }
+    },
+
+    market: {
+        icon: '$',
+        render: (id) => {
+            const d = document.createElement('div');
+            d.className = 'market-layout';
+            d.innerHTML = `
+                <div class="market-sidebar">
+                    <div class="m-nav active">MATÉRIEL</div>
+                    <div class="m-nav">LOGICIELS</div>
+                    <div class="m-nav">EXPLOITS</div>
+                    <div class="m-nav">SERVICES</div>
+                </div>
+                <div class="market-main">
+                    <div class="shop-card">
+                        <div class="sc-title">Raspberry Pi 4</div>
+                        <div class="sc-desc">Mini PC pour serveur personnel.</div>
+                        <div class="sc-price">2500 CR</div>
+                        <button onclick="Sys.toast('Ajouté au panier')">ACHETER</button>
+                    </div>
+                    <div class="shop-card">
+                        <div class="sc-title">Wifi Pineapple</div>
+                        <div class="sc-desc">Outil de tests réseaux avancés.</div>
+                        <div class="sc-price">4500 CR</div>
+                        <button onclick="Sys.toast('Ajouté au panier')">ACHETER</button>
+                    </div>
+                    <div class="shop-card">
+                        <div class="sc-title">Licence Kali Linux</div>
+                        <div class="sc-desc">OS dédié au pentest.</div>
+                        <div class="sc-price">GRATUIT</div>
+                        <button onclick="Sys.toast('Téléchargement lancé')">TÉLÉCHARGER</button>
+                    </div>
+                </div>
+            `;
+            return d;
+        }
+    },
+
+    files: {
+        icon: '📁',
+        render: (id) => {
+            const d = document.createElement('div');
+            d.style.height = '100%'; d.style.display='flex'; d.style.flexDirection='column';
+            // Fusionner fichiers système et fichiers utilisateur
+            const allFiles = [...DB.data.files, ...(DB.data.currentUser.files || [])];
+            
+            d.innerHTML = `
+                <div style="padding:10px; border-bottom:1px solid #333; display:flex; justify-content:space-between;">
+                    <span>EXPLORATEUR DE FICHIERS</span>
+                    <button class="btn-small" onclick="Sys.toast('Nouveau fichier créé')">+</button>
+                </div>
+                <div class="file-grid">
+                    ${allFiles.map(f => `
+                        <div class="file-item">
+                            <span class="file-icon">📄</span>
+                            <div style="font-size:10px; margin-top:5px;">${f.name}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            return d;
+        }
+    },
+
+    settings: {
+        icon: '⚙',
+        render: (id) => {
+            const d = document.createElement('div');
+            d.style.padding = '20px';
+            d.innerHTML = `
+                <h2>PARAMÈTRES SYSTÈME</h2>
+                <div style="margin-top:20px;">
+                    <h4 style="color:#888; margin-bottom:10px;">APPARENCE</h4>
+                    <div style="display:flex; gap:10px;">
+                        <button style="background:var(--primary);" onclick="UI.setTheme('theme-red')">ROUGE</button>
+                        <button style="background:#0088ff;" onclick="UI.setTheme('theme-blue')">BLEU</button>
+                        <button style="background:#00ff66;" onclick="UI.setTheme('theme-green')">VERT</button>
+                        <button style="background:#bd00ff;" onclick="UI.setTheme('theme-purple')">VIOLET</button>
+                    </div>
+                </div>
+                <div style="margin-top:30px;">
+                    <h4 style="color:#888; margin-bottom:10px;">DONNÉES</h4>
+                    <button onclick="localStorage.clear(); location.reload();" style="background:darkred;">RÉINITIALISER LE SYSTÈME</button>
+                </div>
+            `;
+            return d;
+        }
+    },
+
+    admin: {
+        icon: '🛡',
+        render: (id) => {
+            const d = document.createElement('div');
+            if(DB.data.currentUser.role !== 'admin') {
+                d.style.padding='50px'; d.style.textAlign='center'; d.style.color='red';
+                d.innerHTML = `<h1>ACCES REFUSE</h1><p>PRIVILÈGES INSUFFISANTS</p>`;
+                return d;
+            }
+            d.className = 'admin-dash'; d.style.padding = '20px'; d.style.overflowY='auto'; d.style.height='100%';
+            d.innerHTML = `
+                <h2 style="color:var(--primary);">PANNEAU DE CONTRÔLE</h2>
+                <div style="background:rgba(255,255,255,0.05); padding:15px; margin:15px 0;">
+                    <h3>BASE UTILISATEURS (${DB.data.users.length})</h3>
+                    <div style="max-height:200px; overflow-y:auto; margin-top:10px;">
+                        ${DB.data.users.map(u => `
+                            <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #333; font-size:11px;">
+                                <span>${u.name} (${u.ip}) - ${u.role}</span>
+                                <span style="color:var(--primary);">${u.money} CR</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div style="background:rgba(255,255,255,0.05); padding:15px;">
+                    <h3>LOGS D'ACTIVITÉ</h3>
+                    <div style="font-family:'JetBrains Mono'; font-size:10px; max-height:150px; overflow-y:auto; margin-top:10px;">
+                        ${DB.data.hacks.map(l => `<div>[${l.t}] ${l.m}</div>`).join('')}
+                    </div>
+                </div>
+            `;
+            return d;
+        }
+    }
+};
+
+// Lancement du système
+window.onload = () => Sys.init();
+</script>
+</body>
+</html>
